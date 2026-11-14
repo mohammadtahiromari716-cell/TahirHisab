@@ -1,0 +1,39 @@
+name: Build Tahir Hisab APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'TahirHisabAndroid.zip'
+      - '.github/workflows/android-apk.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Extract project
+        run: |
+          unzip -o TahirHisabAndroid.zip -d /tmp/tahir
+          cp -a /tmp/tahir/TahirHisab/. .
+
+      - name: Build APK
+        uses: gradle/gradle-build-action@v3
+        with:
+          gradle-version: '8.9'
+          arguments: :app:assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Tahir-Hisab-APK
+          path: app/build/outputs/apk/debug/app-debug.apk
