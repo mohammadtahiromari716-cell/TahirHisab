@@ -17,8 +17,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Extract project ZIP
-        run: unzip -o TahirHisab2.zip -d .
+      - name: Find and extract ZIP
+        run: |
+          ZIP_FILE=$(find . -type f -iname '*.zip' -not -path './.git/*' | head -n 1)
+          if [ -z "$ZIP_FILE" ]; then
+            echo "ZIP file not found"
+            find . -maxdepth 4 -type f
+            exit 1
+          fi
+          mkdir extracted
+          unzip -o "$ZIP_FILE" -d extracted
+          cp -a extracted/. .
 
       - name: Setup Java
         uses: actions/setup-java@v4
