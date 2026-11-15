@@ -17,32 +17,34 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Find and extract ZIP
-        run: |
-          ZIP_FILE=$(find . -type f -iname '*.zip' -not -path './.git/*' | head -n 1)
-          if [ -z "$ZIP_FILE" ]; then
-            echo "ZIP file not found"
-            find . -maxdepth 4 -type f
-            exit 1
-          fi
-          mkdir extracted
-          unzip -o "$ZIP_FILE" -d extracted
-          cp -a extracted/. .
-
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
+      - name: Extract project
+        run: |
+          mkdir extracted
+          ZIP=$(find . -type f -name '*.zip' | head -n 1)
+          unzip -o "$ZIP" -d extracted
+          SETTINGS=$(find extracted -name settings.gradle.kts -o -name settings.gradle | head -n 1)
+          if [ -z "$SETTINGS" ]; then
+            echo "Gradle settings not found"
+            exit 1
+          fi
+          PROJECT_DIR=$(dirname "$SETTINGS")
+          echo "PROJECT_DIR=$PROJECT_DIR" >> $GITHUB_ENV
+          echo "Project found: $PROJECT_DIR"
+
       - name: Build APK
         uses: gradle/gradle-build-action@v3
         with:
           gradle-version: '8.9'
-          arguments: :app:assembleDebug
+          arguments: -p ${{ env.PROJECT_DIR }} :app:assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Tahir-Hisab-APK
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/app-debug.apk
